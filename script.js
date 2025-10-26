@@ -7,13 +7,12 @@ const promptsContainer = document.getElementById("promptsContainer");
 const copiedMsg = document.getElementById("copiedMsg");
 const uploadJson = document.getElementById("uploadJson");
 const llmSelect = document.getElementById("llmSelect");
-const llmJsonInput = document.getElementById("llmJsonInput");
 const pasteDownloadBtn = document.getElementById("pasteDownloadBtn");
 
 // --- Tâches stockées localement ---
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-// --- Fonction format date ---
+// --- Format date ---
 function formatDate(iso){
   const d = new Date(iso);
   const day = String(d.getDate()).padStart(2,'0');
@@ -26,16 +25,14 @@ function formatDate(iso){
 // --- Render tasks ---
 function renderTasks() {
   tasksContainer.innerHTML = "";
-  tasks
-    .slice()
-    .sort((a,b)=> new Date(a.date) - new Date(b.date))
+  tasks.slice().sort((a,b)=> new Date(a.date)-new Date(b.date))
     .forEach(task=>{
       const li = document.createElement("li");
       li.className = "task-item";
 
       const taskText = document.createElement("div");
       taskText.className = "task-text";
-      taskText.textContent = task.text + " (ajoutée le " + task.date.split("T")[0] + ")";
+      taskText.textContent = task.text + " (ajoutée le "+task.date.split("T")[0]+")";
       taskText.style.cursor = "pointer";
 
       if(task.comments?.length){
@@ -63,7 +60,6 @@ function renderTasks() {
       commentInput.placeholder = "Ajouter un commentaire…";
       const commentBtn = document.createElement("button");
       commentBtn.textContent = "+";
-
       commentBtn.addEventListener("click", ()=>{
         const val = commentInput.value.trim();
         if(val!==""){
@@ -74,7 +70,6 @@ function renderTasks() {
           renderTasks();
         }
       });
-
       commentInputDiv.appendChild(commentInput);
       commentInputDiv.appendChild(commentBtn);
       commentBlock.appendChild(commentInputDiv);
@@ -83,7 +78,7 @@ function renderTasks() {
       li.appendChild(commentBlock);
 
       taskText.addEventListener("click", ()=>{
-        commentBlock.style.display = commentBlock.style.display === "none" ? "flex" : "none";
+        commentBlock.style.display = commentBlock.style.display==="none"?"flex":"none";
       });
 
       tasksContainer.appendChild(li);
@@ -115,13 +110,12 @@ archiveBtn.addEventListener("click", ()=>{
   URL.revokeObjectURL(url);
 });
 
-// --- Nettoyer et Restaurer ---
+// --- Nettoyer / Restaurer ---
 const buttonsRow = document.querySelector(".buttons-row");
-
 const clearBtn = document.createElement("button");
 clearBtn.textContent = "🧹 Tout nettoyer";
 clearBtn.addEventListener("click", ()=>{
-  if(confirm("Es-tu sûr de vouloir tout effacer ?")){
+  if(confirm("Es-tu sûr ?")){
     tasks = [];
     localStorage.removeItem("tasks");
     renderTasks();
@@ -135,10 +129,8 @@ restoreBtn.textContent = "📂 Restaurer depuis JSON";
 const restoreInput = document.createElement("input");
 restoreInput.type="file";
 restoreInput.accept=".json";
-restoreInput.style.display = "none";
-
+restoreInput.style.display="none";
 restoreBtn.addEventListener("click", ()=> restoreInput.click());
-
 restoreInput.addEventListener("change", event=>{
   Array.from(event.target.files).forEach(file=>{
     const reader = new FileReader();
@@ -149,18 +141,15 @@ restoreInput.addEventListener("change", event=>{
           data.forEach(item=>{
             if(item.text && item.date){
               if(!item.comments) item.comments=[];
-              item.comments = item.comments.map(c=>{
-                if(typeof c==='string') return {text:c, date:new Date().toISOString()};
-                return c;
-              });
+              item.comments = item.comments.map(c=>typeof c==='string'?{text:c,date:new Date().toISOString()}:c);
               tasks.push({text:item.text, date:item.date, comments:item.comments});
             }
           });
           localStorage.setItem("tasks", JSON.stringify(tasks));
           renderTasks();
-          alert("✅ JSON restauré avec succès !");
+          alert("✅ JSON restauré !");
         }
-      }catch(err){ alert("❌ Impossible de lire le fichier JSON"); }
+      }catch(err){ alert("❌ Impossible de lire le JSON"); }
     };
     reader.readAsText(file);
   });
@@ -174,19 +163,15 @@ const prompts = [
   {id:"prioriser", label:"Priorité", text:"Classe ces tâches par ordre de priorité et urgence :"},
   {id:"categoriser", label:"Catégories", text:"Range ces tâches dans des catégories logiques :"}
 ];
-
 prompts.forEach(p=>{
   const btn = document.createElement("button");
   btn.textContent = p.label;
   btn.addEventListener("click", ()=>{
     const combined = p.text + "\n\n" + tasks.map(t=>{
       let str = "- "+t.text;
-      if(t.comments?.length){
-        str += "\n  Commentaires :\n" + t.comments.map(c=>`    - [${formatDate(c.date)}] ${c.text}`).join("\n");
-      }
+      if(t.comments?.length) str += "\n  Commentaires :\n" + t.comments.map(c=>`    - [${formatDate(c.date)}] ${c.text}`).join("\n");
       return str;
     }).join("\n");
-
     navigator.clipboard.writeText(combined).then(()=>{
       copiedMsg.style.display="block";
       setTimeout(()=>copiedMsg.style.display="none",2000);
@@ -196,53 +181,21 @@ prompts.forEach(p=>{
   promptsContainer.appendChild(btn);
 });
 
-// --- Upload JSON additionnel ---
-uploadJson.addEventListener("change", event=>{
-  Array.from(event.target.files).forEach(file=>{
-    const reader = new FileReader();
-    reader.onload = e=>{
-      try{
-        const data = JSON.parse(e.target.result);
-        if(Array.isArray(data)){
-          data.forEach(item=>{
-            if(item.text && item.date){
-              if(!item.comments) item.comments=[];
-              item.comments = item.comments.map(c=>{
-                if(typeof c==='string') return {text:c, date:new Date().toISOString()};
-                return c;
-              });
-              tasks.push({text:item.text, date:item.date, comments:item.comments});
-            }
-          });
-          localStorage.setItem("tasks", JSON.stringify(tasks));
-          renderTasks();
-        }
-      }catch(err){ console.error(err); }
-    };
-    reader.readAsText(file);
-  });
-});
-
-// --- Coller & Télécharger JSON depuis LLM ---
-pasteDownloadBtn.addEventListener("click", ()=>{
-  const raw = llmJsonInput.value.trim();
-  if(!raw){ alert("❌ Colle d'abord le JSON du LLM !"); return; }
-
+// --- Coller & Télécharger JSON direct depuis presse-papier ---
+pasteDownloadBtn.addEventListener("click", async ()=>{
   try{
+    const raw = await navigator.clipboard.readText();
+    if(!raw){ alert("❌ Presse-papier vide !"); return; }
     const parsed = JSON.parse(raw);
-    if(!Array.isArray(parsed)){ alert("❌ JSON invalide : doit être un tableau !"); return; }
+    if(!Array.isArray(parsed)){ alert("❌ JSON invalide !"); return; }
 
     parsed.forEach(item=>{
       if(item.text && item.date){
         if(!item.comments) item.comments=[];
-        item.comments = item.comments.map(c=>{
-          if(typeof c==='string') return {text:c, date:new Date().toISOString()};
-          return c;
-        });
+        item.comments = item.comments.map(c=>typeof c==='string'?{text:c,date:new Date().toISOString()}:c);
         tasks.push({text:item.text, date:item.date, comments:item.comments});
       }
     });
-
     localStorage.setItem("tasks", JSON.stringify(tasks));
     renderTasks();
 
@@ -256,9 +209,8 @@ pasteDownloadBtn.addEventListener("click", ()=>{
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    llmJsonInput.value = "";
-    alert("✅ JSON collé et téléchargé !");
-  }catch(err){ alert("❌ JSON invalide !"); console.error(err); }
+    alert("✅ JSON collé depuis le presse-papier et téléchargé !");
+  }catch(err){ alert("❌ Impossible de lire le presse-papier ou JSON invalide !"); console.error(err); }
 });
 
 // --- Initial render ---
