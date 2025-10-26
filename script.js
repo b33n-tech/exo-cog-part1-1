@@ -7,11 +7,13 @@ const promptsContainer = document.getElementById("promptsContainer");
 const copiedMsg = document.getElementById("copiedMsg");
 const uploadJson = document.getElementById("uploadJson");
 const llmSelect = document.getElementById("llmSelect");
+const llmJsonInput = document.getElementById("llmJsonInput");
+const pasteDownloadBtn = document.getElementById("pasteDownloadBtn");
 
 // --- Tâches stockées localement ---
 let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
 
-// --- Fonction pour formater date en "JJ/MM hh:mm" ---
+// --- Fonction format date ---
 function formatDate(iso){
   const d = new Date(iso);
   const day = String(d.getDate()).padStart(2,'0');
@@ -21,13 +23,13 @@ function formatDate(iso){
   return `${day}/${month} ${hours}:${minutes}`;
 }
 
-// --- Affichage sidebar avec clic + survol + horodatage ---
+// --- Render tasks ---
 function renderTasks() {
   tasksContainer.innerHTML = "";
   tasks
     .slice()
     .sort((a,b)=> new Date(a.date) - new Date(b.date))
-    .forEach((task, index)=>{
+    .forEach(task=>{
       const li = document.createElement("li");
       li.className = "task-item";
 
@@ -36,17 +38,14 @@ function renderTasks() {
       taskText.textContent = task.text + " (ajoutée le " + task.date.split("T")[0] + ")";
       taskText.style.cursor = "pointer";
 
-      // Tooltip pour commentaires
       if(task.comments?.length){
         taskText.title = task.comments.map(c=>`• ${c.text} (${formatDate(c.date)})`).join("\n");
       }
 
-      // Bloc commentaire caché
       const commentBlock = document.createElement("div");
       commentBlock.className = "comment-section";
       commentBlock.style.display = "none";
 
-      // Liste commentaires
       const commentList = document.createElement("ul");
       commentList.className = "comment-list";
       if(task.comments?.length){
@@ -58,7 +57,6 @@ function renderTasks() {
       }
       commentBlock.appendChild(commentList);
 
-      // Input + bouton ajout commentaire
       const commentInputDiv = document.createElement("div");
       commentInputDiv.className = "comment-input";
       const commentInput = document.createElement("input");
@@ -70,7 +68,7 @@ function renderTasks() {
         const val = commentInput.value.trim();
         if(val!==""){
           if(!task.comments) task.comments=[];
-          task.comments.push({text: val, date: new Date().toISOString()});
+          task.comments.push({text: val, date:new Date().toISOString()});
           localStorage.setItem("tasks", JSON.stringify(tasks));
           commentInput.value="";
           renderTasks();
@@ -84,7 +82,6 @@ function renderTasks() {
       li.appendChild(taskText);
       li.appendChild(commentBlock);
 
-      // Clic pour afficher / cacher le bloc commentaire
       taskText.addEventListener("click", ()=>{
         commentBlock.style.display = commentBlock.style.display === "none" ? "flex" : "none";
       });
@@ -104,7 +101,7 @@ addBtn.addEventListener("click", ()=>{
   }
 });
 
-// --- Archiver JSON ---
+// --- Archiver ---
 archiveBtn.addEventListener("click", ()=>{
   if(tasks.length===0){ alert("Aucune tâche à archiver !"); return; }
   const blob = new Blob([JSON.stringify(tasks,null,2)], {type:"application/json"});
@@ -118,14 +115,13 @@ archiveBtn.addEventListener("click", ()=>{
   URL.revokeObjectURL(url);
 });
 
-// --- Boutons Nettoyer et Restaurer ---
+// --- Nettoyer et Restaurer ---
 const buttonsRow = document.querySelector(".buttons-row");
 
-// Tout nettoyer
 const clearBtn = document.createElement("button");
 clearBtn.textContent = "🧹 Tout nettoyer";
 clearBtn.addEventListener("click", ()=>{
-  if(confirm("Es-tu sûr de vouloir tout effacer ? Cette action est irréversible !")){
+  if(confirm("Es-tu sûr de vouloir tout effacer ?")){
     tasks = [];
     localStorage.removeItem("tasks");
     renderTasks();
@@ -134,19 +130,17 @@ clearBtn.addEventListener("click", ()=>{
 });
 buttonsRow.appendChild(clearBtn);
 
-// Restaurer depuis JSON
 const restoreBtn = document.createElement("button");
 restoreBtn.textContent = "📂 Restaurer depuis JSON";
 const restoreInput = document.createElement("input");
-restoreInput.type = "file";
-restoreInput.accept = ".json";
+restoreInput.type="file";
+restoreInput.accept=".json";
 restoreInput.style.display = "none";
 
 restoreBtn.addEventListener("click", ()=> restoreInput.click());
 
 restoreInput.addEventListener("change", event=>{
-  const files = Array.from(event.target.files);
-  files.forEach(file=>{
+  Array.from(event.target.files).forEach(file=>{
     const reader = new FileReader();
     reader.onload = e=>{
       try{
@@ -166,7 +160,7 @@ restoreInput.addEventListener("change", event=>{
           renderTasks();
           alert("✅ JSON restauré avec succès !");
         }
-      }catch(err){ console.error("Erreur lecture JSON:", err); alert("❌ Impossible de lire le fichier JSON"); }
+      }catch(err){ alert("❌ Impossible de lire le fichier JSON"); }
     };
     reader.readAsText(file);
   });
@@ -196,10 +190,7 @@ prompts.forEach(p=>{
     navigator.clipboard.writeText(combined).then(()=>{
       copiedMsg.style.display="block";
       setTimeout(()=>copiedMsg.style.display="none",2000);
-
-      // Utiliser le LLM sélectionné
-      const llmUrl = llmSelect.value;
-      window.open(llmUrl, "_blank");
+      window.open(llmSelect.value, "_blank");
     });
   });
   promptsContainer.appendChild(btn);
@@ -207,8 +198,7 @@ prompts.forEach(p=>{
 
 // --- Upload JSON additionnel ---
 uploadJson.addEventListener("change", event=>{
-  const files = Array.from(event.target.files);
-  files.forEach(file=>{
+  Array.from(event.target.files).forEach(file=>{
     const reader = new FileReader();
     reader.onload = e=>{
       try{
@@ -227,10 +217,48 @@ uploadJson.addEventListener("change", event=>{
           localStorage.setItem("tasks", JSON.stringify(tasks));
           renderTasks();
         }
-      }catch(err){ console.error("Erreur lecture JSON:", err); }
+      }catch(err){ console.error(err); }
     };
     reader.readAsText(file);
   });
+});
+
+// --- Coller & Télécharger JSON depuis LLM ---
+pasteDownloadBtn.addEventListener("click", ()=>{
+  const raw = llmJsonInput.value.trim();
+  if(!raw){ alert("❌ Colle d'abord le JSON du LLM !"); return; }
+
+  try{
+    const parsed = JSON.parse(raw);
+    if(!Array.isArray(parsed)){ alert("❌ JSON invalide : doit être un tableau !"); return; }
+
+    parsed.forEach(item=>{
+      if(item.text && item.date){
+        if(!item.comments) item.comments=[];
+        item.comments = item.comments.map(c=>{
+          if(typeof c==='string') return {text:c, date:new Date().toISOString()};
+          return c;
+        });
+        tasks.push({text:item.text, date:item.date, comments:item.comments});
+      }
+    });
+
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    renderTasks();
+
+    const blob = new Blob([JSON.stringify(tasks,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `taches_${new Date().toISOString().slice(0,19).replace(/:/g,"-")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    llmJsonInput.value = "";
+    alert("✅ JSON collé et téléchargé !");
+  }catch(err){ alert("❌ JSON invalide !"); console.error(err); }
 });
 
 // --- Initial render ---
