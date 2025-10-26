@@ -100,6 +100,36 @@ main {
   padding: 5px;
 }
 
+.paste-json-panel {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+#llmJsonInput {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.95rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  resize: vertical;
+}
+
+#pasteDownloadBtn {
+  padding: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  background: #4caf50;
+  color: white;
+  border-radius: 5px;
+}
+
+#pasteDownloadBtn:hover {
+  background: #388e3c;
+}
+
 .task-list {
   flex: 1;
   background: white;
