@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Dashboard Tâches + Commentaires V2</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>🧠 Mini Dashboard Tâches</h1>
+    <p>Ajoute, archive, commente et envoie tes tâches à un LLM.</p>
+
+    <!-- Sélecteur LLM -->
+    <div class="llm-selector">
+      <label for="llmSelect">Choisir LLM :</label>
+      <select id="llmSelect">
+        <option value="https://chatgpt.com/">ChatGPT</option>
+        <option value="https://chat.deepseek.com/">DeepSeek Chat</option>
+        <option value="https://chat.mistral.ai/chat">Mistral Chat</option>
+        <option value="https://claude.ai/">Claude AI</option>
+        <option value="https://www.perplexity.ai/">Perplexity</option>
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <!-- Section gauche : input + boutons + prompts + upload -->
+    <section class="input-section">
+      <input type="text" id="taskInput" placeholder="Ex : appeler le fournisseur, revoir le doc...">
+
+      <div class="buttons-row">
+        <button id="addBtn">➕ Ajouter</button>
+        <button id="archiveBtn">📦 Archiver</button>
+      </div>
+
+      <!-- Panel Prompts -->
+      <div class="prompt-panel">
+        <h2>⚡ Prompts</h2>
+        <div id="promptsContainer"></div>
+      </div>
+
+      <div class="upload-panel">
+        <h2>📂 Upload JSON</h2>
+        <input type="file" id="uploadJson" multiple accept=".json">
+      </div>
+    </section>
+
+    <!-- Sidebar droite : Historique des tâches -->
+    <aside class="task-list">
+      <h2>📝 Historique des tâches</h2>
+      <ul id="tasksContainer"></ul>
+    </aside>
+
+    <!-- Message Copié -->
+    <div id="copiedMsg" class="copied-msg" style="display:none;">✅ Copié dans le presse-papier !</div>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
