@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mini Dashboard Tâches + Commentaires V2</title>
+  <title>Mini Dashboard Tâches + Commentaires V3</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,9 +40,17 @@
         <div id="promptsContainer"></div>
       </div>
 
+      <!-- Upload JSON -->
       <div class="upload-panel">
         <h2>📂 Upload JSON</h2>
         <input type="file" id="uploadJson" multiple accept=".json">
+      </div>
+
+      <!-- Coller JSON depuis LLM -->
+      <div class="paste-json-panel">
+        <h2>📋 Coller JSON du LLM</h2>
+        <textarea id="llmJsonInput" placeholder="Colle ici le JSON retourné par le LLM…" rows="5"></textarea>
+        <button id="pasteDownloadBtn">⬇️ Coller & Télécharger JSON</button>
       </div>
     </section>
 
