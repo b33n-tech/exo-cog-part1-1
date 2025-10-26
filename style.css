@@ -102,18 +102,6 @@ main {
 
 .paste-json-panel {
   margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-#llmJsonInput {
-  width: 100%;
-  padding: 10px;
-  font-size: 0.95rem;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-  resize: vertical;
 }
 
 #pasteDownloadBtn {
